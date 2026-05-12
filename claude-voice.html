@@ -25,26 +25,26 @@
     pointer-events: none; z-index: 0;
   }
   .container { width: 100%; max-width: 480px; position: relative; z-index: 1; }
-  header { text-align: center; margin-bottom: 32px; }
+  header { text-align: center; margin-bottom: 28px; }
   .logo { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.3em; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
   h1 { font-size: 22px; font-weight: 300; color: var(--text); letter-spacing: 0.05em; }
-  .api-section, .system-section {
+  .section {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 16px; padding: 20px; margin-bottom: 20px;
+    border-radius: 16px; padding: 20px; margin-bottom: 16px;
   }
-  .api-section label, .system-section label {
+  .section label {
     display: block; font-size: 11px; letter-spacing: 0.15em;
     text-transform: uppercase; color: var(--text-muted);
     margin-bottom: 10px; font-family: 'Space Mono', monospace;
   }
-  .api-row { display: flex; gap: 8px; }
-  .api-input {
+  .input-row { display: flex; gap: 8px; }
+  .text-input {
     flex: 1; background: var(--bg); border: 1px solid var(--border);
     border-radius: 10px; padding: 12px 14px; color: var(--text);
     font-family: 'Space Mono', monospace; font-size: 12px; outline: none; transition: border-color 0.2s;
   }
-  .api-input:focus { border-color: var(--accent); }
-  .api-input::placeholder { color: var(--text-muted); }
+  .text-input:focus { border-color: var(--accent); }
+  .text-input::placeholder { color: var(--text-muted); }
   .btn-save {
     background: var(--accent); color: white; border: none;
     border-radius: 10px; padding: 12px 18px; font-size: 13px;
@@ -52,17 +52,25 @@
     transition: opacity 0.2s; white-space: nowrap;
   }
   .btn-save:hover { opacity: 0.85; }
-  .api-status { margin-top: 8px; font-size: 12px; color: var(--text-muted); }
-  .api-status.ok { color: var(--success); }
-  .api-status.err { color: var(--error); }
-  .system-input {
+  .input-status { margin-top: 8px; font-size: 12px; color: var(--text-muted); }
+  .input-status.ok { color: var(--success); }
+  .input-status.err { color: var(--error); }
+  .textarea-input {
     width: 100%; background: var(--bg); border: 1px solid var(--border);
     border-radius: 10px; padding: 12px 14px; color: var(--text);
     font-family: 'Noto Sans JP', sans-serif; font-size: 13px;
-    outline: none; resize: none; height: 80px;
+    outline: none; resize: none; height: 72px;
     transition: border-color 0.2s; line-height: 1.6;
   }
-  .system-input:focus { border-color: var(--accent); }
+  .textarea-input:focus { border-color: var(--accent); }
+  .voice-select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif; font-size: 13px;
+    outline: none; cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6b8a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+  }
   .mic-area { display: flex; flex-direction: column; align-items: center; gap: 20px; margin: 8px 0 24px; }
   .mic-btn {
     width: 100px; height: 100px; border-radius: 50%;
@@ -104,21 +112,20 @@
     font-family: 'Noto Sans JP', sans-serif; display: none; transition: all 0.2s;
   }
   .btn-stop.visible { display: block; }
-  .btn-stop:hover { background: rgba(248,113,113,0.1); }
   .btn-clear {
     background: transparent; border: 1px solid var(--border); color: var(--text-muted);
     border-radius: 10px; padding: 10px 24px; font-size: 13px; cursor: pointer;
-    font-family: 'Noto Sans JP', sans-serif; transition: all 0.2s; margin-top: 8px;
+    font-family: 'Noto Sans JP', sans-serif; transition: all 0.2s;
   }
   .btn-clear:hover { border-color: var(--text-muted); color: var(--text); }
-  .actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 32px; }
   .toast {
     position: fixed; bottom: 24px; left: 50%;
     transform: translateX(-50%) translateY(80px);
     background: #2a1a1a; border: 1px solid var(--error); color: var(--error);
     padding: 12px 20px; border-radius: 12px; font-size: 13px;
     transition: transform 0.3s ease; z-index: 100;
-    white-space: nowrap; max-width: 90vw; text-align: center;
+    max-width: 90vw; text-align: center;
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
 </style>
@@ -129,18 +136,48 @@
     <div class="logo">Voice Assistant</div>
     <h1>Claude に話しかける</h1>
   </header>
-  <div class="api-section">
-    <label>API キー</label>
-    <div class="api-row">
-      <input class="api-input" type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off">
-      <button class="btn-save" onclick="saveKey()">保存</button>
+
+  <!-- Claude API Key -->
+  <div class="section">
+    <label>Claude API キー</label>
+    <div class="input-row">
+      <input class="text-input" type="password" id="claudeKey" placeholder="sk-ant-..." autocomplete="off">
+      <button class="btn-save" onclick="saveKeys()">保存</button>
     </div>
-    <div class="api-status" id="apiStatus"></div>
+    <div class="input-status" id="claudeStatus"></div>
   </div>
-  <div class="system-section">
+
+  <!-- Gemini API Key -->
+  <div class="section">
+    <label>Gemini API キー（音声読み上げ用）</label>
+    <div class="input-row">
+      <input class="text-input" type="password" id="geminiKey" placeholder="AIza..." autocomplete="off">
+    </div>
+    <div class="input-status" id="geminiStatus"></div>
+  </div>
+
+  <!-- Voice selection -->
+  <div class="section">
+    <label>音声キャラクター</label>
+    <select class="voice-select" id="voiceSelect">
+      <option value="Aoede">Aoede（明るく流暢）</option>
+      <option value="Charon">Charon（落ち着いた）</option>
+      <option value="Fenrir">Fenrir（力強い）</option>
+      <option value="Kore" selected>Kore（温かみのある）</option>
+      <option value="Puck">Puck（活発）</option>
+      <option value="Leda">Leda（穏やか）</option>
+      <option value="Orus">Orus（深み）</option>
+      <option value="Zephyr">Zephyr（爽やか）</option>
+    </select>
+  </div>
+
+  <!-- System prompt -->
+  <div class="section">
     <label>システムプロンプト（任意）</label>
-    <textarea class="system-input" id="systemPrompt" placeholder="例：日本語で短く答えてください。"></textarea>
+    <textarea class="textarea-input" id="systemPrompt">日本語で簡潔に答えてください。音声で聞きやすいよう、箇条書きや記号は使わずに自然な話し言葉で答えてください。</textarea>
   </div>
+
+  <!-- Mic -->
   <div class="mic-area">
     <button class="mic-btn" id="micBtn" onclick="toggleRecording()">
       <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -149,7 +186,9 @@
     </button>
     <div class="mic-label" id="micLabel">タップして話す</div>
   </div>
+
   <div class="conversation" id="conversation"></div>
+
   <div class="actions">
     <button class="btn-stop" id="btnStop" onclick="stopSpeaking()">読み上げ停止</button>
     <button class="btn-clear" onclick="clearConversation()">会話をリセット</button>
@@ -158,50 +197,55 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  let apiKey = localStorage.getItem('claude_api_key') || '';
+  let claudeKey = localStorage.getItem('claude_api_key') || '';
+  let geminiKey = localStorage.getItem('gemini_api_key') || '';
   let history = [];
   let recognition = null;
   let isRecording = false;
   let isSpeaking = false;
-  let currentUtterance = null;
-  let audioUnlocked = false;
-  let resumeTimer = null;
+  let currentAudio = null;
 
   // 初期化
-  if (apiKey) {
-    document.getElementById('apiKey').value = apiKey;
-    document.getElementById('apiStatus').textContent = '✓ キーが保存されています';
-    document.getElementById('apiStatus').className = 'api-status ok';
+  if (claudeKey) {
+    document.getElementById('claudeKey').value = claudeKey;
+    document.getElementById('claudeStatus').textContent = '✓ 保存済み';
+    document.getElementById('claudeStatus').className = 'input-status ok';
   }
-  document.getElementById('systemPrompt').value = '日本語で簡潔に答えてください。音声で聞きやすいよう、箇条書きや記号は使わずに自然な話し言葉で答えてください。';
-
-  // iOS Safari: 音声APIを最初のタップで解放
-  function unlockAudio() {
-    if (audioUnlocked || !window.speechSynthesis) return;
-    audioUnlocked = true;
-    const u = new SpeechSynthesisUtterance(' ');
-    u.volume = 0;
-    u.rate = 10;
-    window.speechSynthesis.speak(u);
+  if (geminiKey) {
+    document.getElementById('geminiKey').value = geminiKey;
+    document.getElementById('geminiStatus').textContent = '✓ 保存済み';
+    document.getElementById('geminiStatus').className = 'input-status ok';
   }
 
-  function saveKey() {
-    const key = document.getElementById('apiKey').value.trim();
-    if (!key.startsWith('sk-ant-')) { showStatus('キーの形式が正しくありません', 'err'); return; }
-    apiKey = key;
-    localStorage.setItem('claude_api_key', key);
-    showStatus('✓ 保存しました', 'ok');
-  }
-
-  function showStatus(msg, type) {
-    const el = document.getElementById('apiStatus');
-    el.textContent = msg;
-    el.className = 'api-status ' + type;
+  function saveKeys() {
+    const ck = document.getElementById('claudeKey').value.trim();
+    const gk = document.getElementById('geminiKey').value.trim();
+    let ok = true;
+    if (!ck.startsWith('sk-ant-')) {
+      document.getElementById('claudeStatus').textContent = 'キーの形式が正しくありません';
+      document.getElementById('claudeStatus').className = 'input-status err';
+      ok = false;
+    } else {
+      claudeKey = ck;
+      localStorage.setItem('claude_api_key', ck);
+      document.getElementById('claudeStatus').textContent = '✓ 保存しました';
+      document.getElementById('claudeStatus').className = 'input-status ok';
+    }
+    if (!gk.startsWith('AIza')) {
+      document.getElementById('geminiStatus').textContent = 'キーの形式が正しくありません（AIzaで始まる）';
+      document.getElementById('geminiStatus').className = 'input-status err';
+      ok = false;
+    } else {
+      geminiKey = gk;
+      localStorage.setItem('gemini_api_key', gk);
+      document.getElementById('geminiStatus').textContent = '✓ 保存しました';
+      document.getElementById('geminiStatus').className = 'input-status ok';
+    }
+    return ok;
   }
 
   function toggleRecording() {
-    unlockAudio();
-    if (!apiKey) { showToast('先にAPIキーを保存してください'); return; }
+    if (!claudeKey || !geminiKey) { showToast('両方のAPIキーを保存してください'); return; }
     if (isSpeaking) { stopSpeaking(); return; }
     if (isRecording) { stopRecording(); return; }
     startRecording();
@@ -246,7 +290,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey,
+          'x-api-key': claudeKey,
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true'
         },
@@ -254,7 +298,7 @@
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast(data?.error?.message || 'APIエラー');
+        showToast(data?.error?.message || 'Claude APIエラー');
         history.pop();
         setMicState('idle', 'タップして話す');
         return;
@@ -262,7 +306,7 @@
       const reply = data.content[0].text;
       history.push({ role: 'assistant', content: reply });
       addMessage('assistant', reply);
-      speak(reply);
+      await speakWithGemini(reply);
     } catch (e) {
       showToast('通信エラーが発生しました');
       history.pop();
@@ -270,57 +314,101 @@
     }
   }
 
-  function speak(text) {
-    if (!window.speechSynthesis) { setMicState('idle', 'タップして話す'); return; }
-    if (resumeTimer) { clearInterval(resumeTimer); resumeTimer = null; }
-    window.speechSynthesis.cancel();
-
-    setTimeout(() => {
-      currentUtterance = new SpeechSynthesisUtterance(text);
-      currentUtterance.lang = 'ja-JP';
-      currentUtterance.rate = 1.0;
-      currentUtterance.pitch = 1.0;
-
-      const voices = window.speechSynthesis.getVoices();
-      const jaVoice = voices.find(v => v.lang === 'ja-JP') || voices.find(v => v.lang.startsWith('ja'));
-      if (jaVoice) currentUtterance.voice = jaVoice;
-
-      currentUtterance.onstart = () => {
+  async function speakWithGemini(text) {
+    setMicState('thinking', '音声生成中…');
+    const voiceName = document.getElementById('voiceSelect').value;
+    try {
+      const res = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=' + geminiKey,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: text }] }],
+            generationConfig: {
+              responseModalities: ['AUDIO'],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: voiceName }
+                }
+              }
+            }
+          })
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data?.error?.message || 'Gemini TTSエラー');
+        setMicState('idle', 'タップして話す');
+        return;
+      }
+      const audioData = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (!audioData) {
+        showToast('音声データが取得できませんでした');
+        setMicState('idle', 'タップして話す');
+        return;
+      }
+      // PCM → WAV変換して再生
+      const pcmData = base64ToArrayBuffer(audioData);
+      const wavBuffer = pcmToWav(pcmData, 24000, 1, 16);
+      const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      if (currentAudio) { currentAudio.pause(); URL.revokeObjectURL(currentAudio.src); }
+      currentAudio = new Audio(url);
+      currentAudio.onplay = () => {
         isSpeaking = true;
         setMicState('speaking', '読み上げ中…');
         document.getElementById('btnStop').classList.add('visible');
-        // iOS Safari: 長文で途中停止するバグの回避
-        resumeTimer = setInterval(() => {
-          if (!window.speechSynthesis.speaking) { clearInterval(resumeTimer); resumeTimer = null; return; }
-          window.speechSynthesis.pause();
-          window.speechSynthesis.resume();
-        }, 5000);
       };
-      currentUtterance.onend = () => {
+      currentAudio.onended = () => {
         isSpeaking = false;
-        if (resumeTimer) { clearInterval(resumeTimer); resumeTimer = null; }
+        setMicState('idle', 'タップして話す');
+        document.getElementById('btnStop').classList.remove('visible');
+        URL.revokeObjectURL(url);
+      };
+      currentAudio.onerror = () => {
+        isSpeaking = false;
         setMicState('idle', 'タップして話す');
         document.getElementById('btnStop').classList.remove('visible');
       };
-      currentUtterance.onerror = () => {
-        isSpeaking = false;
-        if (resumeTimer) { clearInterval(resumeTimer); resumeTimer = null; }
-        setMicState('idle', 'タップして話す');
-        document.getElementById('btnStop').classList.remove('visible');
-      };
-      window.speechSynthesis.speak(currentUtterance);
-    }, 100);
+      await currentAudio.play();
+    } catch (e) {
+      showToast('Gemini TTS エラー: ' + e.message);
+      setMicState('idle', 'タップして話す');
+    }
   }
 
-  // iOS: 音声リスト事前ロード
-  if (window.speechSynthesis) {
-    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
-    window.speechSynthesis.getVoices();
+  function base64ToArrayBuffer(base64) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes.buffer;
+  }
+
+  function pcmToWav(pcmBuffer, sampleRate, numChannels, bitDepth) {
+    const dataLen = pcmBuffer.byteLength;
+    const buffer = new ArrayBuffer(44 + dataLen);
+    const view = new DataView(buffer);
+    function writeStr(offset, str) { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); }
+    writeStr(0, 'RIFF');
+    view.setUint32(4, 36 + dataLen, true);
+    writeStr(8, 'WAVE');
+    writeStr(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true);
+    view.setUint16(32, numChannels * (bitDepth / 8), true);
+    view.setUint16(34, bitDepth, true);
+    writeStr(36, 'data');
+    view.setUint32(40, dataLen, true);
+    new Uint8Array(buffer, 44).set(new Uint8Array(pcmBuffer));
+    return buffer;
   }
 
   function stopSpeaking() {
-    if (resumeTimer) { clearInterval(resumeTimer); resumeTimer = null; }
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
     isSpeaking = false;
     setMicState('idle', 'タップして話す');
     document.getElementById('btnStop').classList.remove('visible');
