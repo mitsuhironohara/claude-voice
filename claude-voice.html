@@ -71,6 +71,13 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6b8a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat; background-position: right 14px center;
   }
+  .voice-load-btn {
+    margin-top: 10px; width: 100%;
+    background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+    border-radius: 10px; padding: 10px; font-size: 13px; cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif; transition: all 0.2s;
+  }
+  .voice-load-btn:hover { border-color: var(--accent); color: var(--accent); }
   .mic-area { display: flex; flex-direction: column; align-items: center; gap: 20px; margin: 8px 0 24px; }
   .mic-btn {
     width: 100px; height: 100px; border-radius: 50%;
@@ -137,7 +144,6 @@
     <h1>Claude に話しかける</h1>
   </header>
 
-  <!-- Claude API Key -->
   <div class="section">
     <label>Claude API キー</label>
     <div class="input-row">
@@ -147,37 +153,35 @@
     <div class="input-status" id="claudeStatus"></div>
   </div>
 
-  <!-- Gemini API Key -->
   <div class="section">
-    <label>Gemini API キー（音声読み上げ用）</label>
+    <label>ElevenLabs API キー（音声読み上げ用）</label>
     <div class="input-row">
-      <input class="text-input" type="password" id="geminiKey" placeholder="AIza..." autocomplete="off">
+      <input class="text-input" type="password" id="elevenKey" placeholder="sk_..." autocomplete="off">
     </div>
-    <div class="input-status" id="geminiStatus"></div>
+    <div class="input-status" id="elevenStatus"></div>
   </div>
 
-  <!-- Voice selection -->
   <div class="section">
     <label>音声キャラクター</label>
     <select class="voice-select" id="voiceSelect">
-      <option value="Aoede">Aoede（明るく流暢）</option>
-      <option value="Charon">Charon（落ち着いた）</option>
-      <option value="Fenrir">Fenrir（力強い）</option>
-      <option value="Kore" selected>Kore（温かみのある）</option>
-      <option value="Puck">Puck（活発）</option>
-      <option value="Leda">Leda（穏やか）</option>
-      <option value="Orus">Orus（深み）</option>
-      <option value="Zephyr">Zephyr（爽やか）</option>
+      <option value="21m00Tcm4TlvDq8ikWAM">Rachel（落ち着いた女性・英語系）</option>
+      <option value="AZnzlk1XvdvUeBnXmlld">Domi（活発な女性）</option>
+      <option value="EXAVITQu4vr4xnSDxMaL">Bella（温かみのある女性）</option>
+      <option value="ErXwobaYiN019PkySvjV">Antoni（落ち着いた男性）</option>
+      <option value="MF3mGyEYCl7XYWbV9V6O">Elli（明るい女性）</option>
+      <option value="TxGEqnHWrfWFTfGW9XjX">Josh（深みのある男性）</option>
+      <option value="VR6AewLTigWG4xSOukaG">Arnold（力強い男性）</option>
+      <option value="pNInz6obpgDQGcFmaJgB">Adam（標準的な男性）</option>
     </select>
+    <button class="voice-load-btn" onclick="loadVoices()">▼ 自分のライブラリから音声を読み込む</button>
+    <div class="input-status" id="voiceStatus"></div>
   </div>
 
-  <!-- System prompt -->
   <div class="section">
     <label>システムプロンプト（任意）</label>
     <textarea class="textarea-input" id="systemPrompt">日本語で簡潔に答えてください。音声で聞きやすいよう、箇条書きや記号は使わずに自然な話し言葉で答えてください。</textarea>
   </div>
 
-  <!-- Mic -->
   <div class="mic-area">
     <button class="mic-btn" id="micBtn" onclick="toggleRecording()">
       <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -198,54 +202,76 @@
 
 <script>
   let claudeKey = localStorage.getItem('claude_api_key') || '';
-  let geminiKey = localStorage.getItem('gemini_api_key') || '';
+  let elevenKey = localStorage.getItem('eleven_api_key') || '';
   let history = [];
   let recognition = null;
   let isRecording = false;
   let isSpeaking = false;
   let currentAudio = null;
 
-  // 初期化
   if (claudeKey) {
     document.getElementById('claudeKey').value = claudeKey;
     document.getElementById('claudeStatus').textContent = '✓ 保存済み';
     document.getElementById('claudeStatus').className = 'input-status ok';
   }
-  if (geminiKey) {
-    document.getElementById('geminiKey').value = geminiKey;
-    document.getElementById('geminiStatus').textContent = '✓ 保存済み';
-    document.getElementById('geminiStatus').className = 'input-status ok';
+  if (elevenKey) {
+    document.getElementById('elevenKey').value = elevenKey;
+    document.getElementById('elevenStatus').textContent = '✓ 保存済み';
+    document.getElementById('elevenStatus').className = 'input-status ok';
   }
 
   function saveKeys() {
     const ck = document.getElementById('claudeKey').value.trim();
-    const gk = document.getElementById('geminiKey').value.trim();
-    let ok = true;
+    const ek = document.getElementById('elevenKey').value.trim();
     if (!ck.startsWith('sk-ant-')) {
       document.getElementById('claudeStatus').textContent = 'キーの形式が正しくありません';
       document.getElementById('claudeStatus').className = 'input-status err';
-      ok = false;
     } else {
       claudeKey = ck;
       localStorage.setItem('claude_api_key', ck);
       document.getElementById('claudeStatus').textContent = '✓ 保存しました';
       document.getElementById('claudeStatus').className = 'input-status ok';
     }
-    if (!gk.startsWith('AIza')) {
-      document.getElementById('geminiStatus').textContent = 'キーの形式が正しくありません（AIzaで始まる）';
-      document.getElementById('geminiStatus').className = 'input-status err';
-      ok = false;
+    if (!ek) {
+      document.getElementById('elevenStatus').textContent = 'キーを入力してください';
+      document.getElementById('elevenStatus').className = 'input-status err';
     } else {
-      geminiKey = gk;
-      localStorage.setItem('gemini_api_key', gk);
-      document.getElementById('geminiStatus').textContent = '✓ 保存しました';
-      document.getElementById('geminiStatus').className = 'input-status ok';
+      elevenKey = ek;
+      localStorage.setItem('eleven_api_key', ek);
+      document.getElementById('elevenStatus').textContent = '✓ 保存しました';
+      document.getElementById('elevenStatus').className = 'input-status ok';
     }
-    return ok;
+  }
+
+  async function loadVoices() {
+    if (!elevenKey) { showToast('先にElevenLabs APIキーを保存してください'); return; }
+    const el = document.getElementById('elevenKey').value.trim();
+    document.getElementById('voiceStatus').textContent = '読み込み中…';
+    document.getElementById('voiceStatus').className = 'input-status';
+    try {
+      const res = await fetch('https://api.elevenlabs.io/v1/voices', {
+        headers: { 'xi-api-key': el }
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast('音声一覧の取得に失敗しました'); return; }
+      const select = document.getElementById('voiceSelect');
+      select.innerHTML = '';
+      data.voices.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.voice_id;
+        opt.textContent = v.name + (v.labels?.accent ? '（' + v.labels.accent + '）' : '');
+        select.appendChild(opt);
+      });
+      document.getElementById('voiceStatus').textContent = '✓ ' + data.voices.length + '件の音声を読み込みました';
+      document.getElementById('voiceStatus').className = 'input-status ok';
+    } catch(e) {
+      showToast('音声一覧の取得に失敗しました');
+      document.getElementById('voiceStatus').textContent = '';
+    }
   }
 
   function toggleRecording() {
-    if (!claudeKey || !geminiKey) { showToast('両方のAPIキーを保存してください'); return; }
+    if (!claudeKey || !elevenKey) { showToast('両方のAPIキーを保存してください'); return; }
     if (isSpeaking) { stopSpeaking(); return; }
     if (isRecording) { stopRecording(); return; }
     startRecording();
@@ -306,7 +332,7 @@
       const reply = data.content[0].text;
       history.push({ role: 'assistant', content: reply });
       addMessage('assistant', reply);
-      await speakWithGemini(reply);
+      await speakWithElevenLabs(reply);
     } catch (e) {
       showToast('通信エラーが発生しました');
       history.pop();
@@ -314,47 +340,34 @@
     }
   }
 
-  async function speakWithGemini(text) {
+  async function speakWithElevenLabs(text) {
     setMicState('thinking', '音声生成中…');
-    const voiceName = document.getElementById('voiceSelect').value;
+    const voiceId = document.getElementById('voiceSelect').value;
+    const ek = document.getElementById('elevenKey').value.trim();
     try {
-      const res = await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=' + geminiKey,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: text }] }],
-            generationConfig: {
-              responseModalities: ['AUDIO'],
-              speechConfig: {
-                voiceConfig: {
-                  prebuiltVoiceConfig: { voiceName: voiceName }
-                }
-              }
-            }
-          })
-        }
-      );
-      const data = await res.json();
+      const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voiceId, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'xi-api-key': ek
+        },
+        body: JSON.stringify({
+          text: text,
+          model_id: 'eleven_multilingual_v2',
+          voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+        })
+      });
       if (!res.ok) {
-        showToast(data?.error?.message || 'Gemini TTSエラー');
+        const err = await res.json().catch(() => ({}));
+        showToast(err?.detail?.message || 'ElevenLabs APIエラー');
         setMicState('idle', 'タップして話す');
         return;
       }
-      const audioData = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (!audioData) {
-        showToast('音声データが取得できませんでした');
-        setMicState('idle', 'タップして話す');
-        return;
-      }
-      // PCM → WAV変換して再生
-      const pcmData = base64ToArrayBuffer(audioData);
-      const wavBuffer = pcmToWav(pcmData, 24000, 1, 16);
-      const blob = new Blob([wavBuffer], { type: 'audio/wav' });
-      const url = URL.createObjectURL(blob);
-      if (currentAudio) { currentAudio.pause(); URL.revokeObjectURL(currentAudio.src); }
+      const audioBlob = await res.blob();
+      const url = URL.createObjectURL(audioBlob);
+      if (currentAudio) { currentAudio.pause(); URL.revokeObjectURL(currentAudio._url); }
       currentAudio = new Audio(url);
+      currentAudio._url = url;
       currentAudio.onplay = () => {
         isSpeaking = true;
         setMicState('speaking', '読み上げ中…');
@@ -373,38 +386,9 @@
       };
       await currentAudio.play();
     } catch (e) {
-      showToast('Gemini TTS エラー: ' + e.message);
+      showToast('ElevenLabs エラー: ' + e.message);
       setMicState('idle', 'タップして話す');
     }
-  }
-
-  function base64ToArrayBuffer(base64) {
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return bytes.buffer;
-  }
-
-  function pcmToWav(pcmBuffer, sampleRate, numChannels, bitDepth) {
-    const dataLen = pcmBuffer.byteLength;
-    const buffer = new ArrayBuffer(44 + dataLen);
-    const view = new DataView(buffer);
-    function writeStr(offset, str) { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); }
-    writeStr(0, 'RIFF');
-    view.setUint32(4, 36 + dataLen, true);
-    writeStr(8, 'WAVE');
-    writeStr(12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, numChannels, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true);
-    view.setUint16(32, numChannels * (bitDepth / 8), true);
-    view.setUint16(34, bitDepth, true);
-    writeStr(36, 'data');
-    view.setUint32(40, dataLen, true);
-    new Uint8Array(buffer, 44).set(new Uint8Array(pcmBuffer));
-    return buffer;
   }
 
   function stopSpeaking() {
